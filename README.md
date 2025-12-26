@@ -82,3 +82,5 @@ text
 - The market is extremely volatile: arbitrage opportunities are rare and close within seconds. Without continuous parameter optimization and monitoring, significant profit is unlikely.
 
 Good luck!
+
+https://camo.githubusercontent.com/33d9e82b7bb5bf41281bfe73d1744bcc3da7bd9b1b50d41c2099746024b3a3b1/68747470733a2f2f76697369746f722d62616467652e6c616f62692e6963752f62616467653f706167655f69643d524541444d455f454e5f504147455f4944
