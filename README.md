@@ -75,7 +75,7 @@ text
 
 - Estimated returns vary significantly and are not guaranteed. Under favorable market conditions, arbitrage can yield 0.01–0.1% of the volume per successful trade.
 
-  **Sample calculation:** With an investment of 1 ETH as starting capital (for gas and initial swaps) and with regular arbitrage opportunities, the bot can execute trades with volumes of 100–500 ETH per month. With an average profit of 0.05% per trade, estimated monthly returns could range from 5% to 25% of invested capital (i.e., 0.05–0.25 ETH per month).
+  **Sample calculation:** With an investment of 1 ETH as starting capital (for gas and initial swaps) and with regular arbitrage opportunities, the bot can execute trades with volumes of 100–500 ETH per month. With an average profit of 0.05% per trade, estimated monthly returns could range from 5% to 25% of invested capital (i.e., 0.05–0.25 ETH per Day).
 
   Thanks to built-in minimum profit checks (`minProfit`) and slippage protection, the bot is practically loss-free: in 99.9% of cases, unsuccessful trades simply don't execute (the transaction reverts without losing funds, except for gas costs). Thus, risks are limited only to gas expenses during unsuccessful attempts.
 
